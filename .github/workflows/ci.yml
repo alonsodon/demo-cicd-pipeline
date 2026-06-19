@@ -1,0 +1,106 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 1: LINT — Estilo y calidad de código
+  # ─────────────────────────────────────────────────────────────────
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'            # cachea las dependencias de pip entre runs
+
+      - name: Install linting tools
+        run: pip install flake8 black
+
+      - name: flake8 (errores + estilo)
+        run: flake8 app/ tests/ --max-line-length 100
+
+      - name: black (formateo)
+        run: black --check app/ tests/
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 2: TEST — pytest
+  # ─────────────────────────────────────────────────────────────────
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: lint                  # solo corre si lint pasa
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run tests with coverage
+        run: pytest tests/ -v --tb=short
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 3: BUILD + PUSH — Solo en main, solo si los tests pasan
+  # ─────────────────────────────────────────────────────────────────
+  build:
+    name: Build & Push
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    permissions:
+      contents: read
+      packages: write            # permiso para pushear a GHCR
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}   # Token automático, no lo creates tú
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push (with layer cache)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha          # lee caché de GitHub Actions
+          cache-to: type=gha,mode=max  # guarda caché para el siguiente run
+
+      - name: Verify image was pushed
+        run: |
+          echo "Image pushed successfully:"
+          echo "${{ steps.meta.outputs.tags }}"

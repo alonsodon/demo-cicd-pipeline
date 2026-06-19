@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# Variables de entorno / secretos
+.env
+.env.local
+
+# Editor / IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Cobertura de tests (si añades pytest-cov más adelante)
+.coverage
+htmlcov/
