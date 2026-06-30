@@ -21,8 +21,8 @@ jobs:
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'            # cachea las dependencias de pip entre runs
+          python-version: "3.11"
+          cache: "pip" # cachea las dependencias de pip entre runs
 
       - name: Install linting tools
         run: pip install flake8 black
@@ -39,7 +39,7 @@ jobs:
   test:
     name: Tests
     runs-on: ubuntu-latest
-    needs: lint                  # solo corre si lint pasa
+    needs: lint # solo corre si lint pasa
 
     steps:
       - uses: actions/checkout@v4
@@ -47,8 +47,8 @@ jobs:
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
@@ -67,7 +67,7 @@ jobs:
 
     permissions:
       contents: read
-      packages: write            # permiso para pushear a GHCR
+      packages: write # permiso para pushear a GHCR
 
     steps:
       - uses: actions/checkout@v4
@@ -80,7 +80,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}   # Token automático, no lo creates tú
+          password: ${{ secrets.GITHUB_TOKEN }} # Token automático, no lo creates tú
 
       - name: Extract image metadata
         id: meta
@@ -97,10 +97,11 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha          # lee caché de GitHub Actions
-          cache-to: type=gha,mode=max  # guarda caché para el siguiente run
+          cache-from: type=gha # lee caché de GitHub Actions
+          cache-to: type=gha,mode=max # guarda caché para el siguiente run
 
       - name: Verify image was pushed
         run: |
           echo "Image pushed successfully:"
           echo "${{ steps.meta.outputs.tags }}"
+          docker pull ghcr.io/${{ github.repository }}:latest
