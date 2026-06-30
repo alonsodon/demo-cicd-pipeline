@@ -40,8 +40,8 @@ docker build -t demo-api .
 docker run -p 8000:8000 demo-api
 
 # Pull the published image instead of building it yourself
-docker pull ghcr.io/TU_USUARIO/demo-cicd-pipeline:latest
-docker run -p 8000:8000 ghcr.io/TU_USUARIO/demo-cicd-pipeline:latest
+docker pull ghcr.io/alonsodon/demo-cicd-pipeline:latest
+docker run -p 8000:8000 ghcr.io/alonsodon/demo-cicd-pipeline:latest
 
 # Run tests
 pytest tests/ -v
